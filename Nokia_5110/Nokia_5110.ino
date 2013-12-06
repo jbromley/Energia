@@ -1,5 +1,5 @@
 // Simple Nokia 5110 LCD Example
-//#define USE_SPI
+#define USE_SPI
 
 #ifdef USE_SPI
 #include <SPI.h>
@@ -126,13 +126,13 @@ void writeLCD(byte mode, byte data)
 {
     digitalWrite(PIN_DC, mode);
 
+    digitalWrite(PIN_SCE, LOW);
 #ifdef USE_SPI
     SPI.transfer(data);
 #else
-    digitalWrite(PIN_SCE, LOW);
     shiftOut(PIN_SDIN, PIN_SCLK, MSBFIRST, data);
-    digitalWrite(PIN_SCE, HIGH);
 #endif
+    digitalWrite(PIN_SCE, HIGH);
 }
 
 void writeCharacterLCD(char ch)
@@ -157,20 +157,26 @@ void initializeLCD()
     pinMode(PIN_RESET, OUTPUT);
     pinMode(PIN_SCE, OUTPUT);
     pinMode(PIN_DC, OUTPUT);
+#ifndef USE_SPI
     pinMode(PIN_SDIN, OUTPUT);
     pinMode(PIN_SCLK, OUTPUT);
+#endif
     pinMode(PIN_LIGHT, OUTPUT);
 
     // Reset the LCD.
+    digitalWrite(PIN_DC, LOW);
+    delay(30);
     digitalWrite(PIN_RESET, LOW);
+    delay(100);
     digitalWrite(PIN_RESET, HIGH);
   
     // Configure the LCD.
     writeLCD(LCD_COMMAND, 0x21);        // LCD extended commands
-    writeLCD(LCD_COMMAND, 0xB1);        // Set LCD VOP (contrast)
+    writeLCD(LCD_COMMAND, 0xC8);        // Set LCD VOP (contrast)
     writeLCD(LCD_COMMAND, 0x04);        // Set temperature coefficient.
-    writeLCD(LCD_COMMAND, 0x15);        // LCD bias mode
+    writeLCD(LCD_COMMAND, 0x13);        // LCD bias mode
     writeLCD(LCD_COMMAND, 0x20);        // Normal command mode.
+    writeLCD(LCD_COMMAND, 0x09);
     writeLCD(LCD_COMMAND, 0x0C);        // Normal display mode.
 }
 
@@ -201,9 +207,9 @@ void setup()
     // Configure SPI.
 #ifdef USE_SPI
     SPI.begin();
-    SPI.setDataMode(SPI_MODE0);
+    SPI.setClockDivider(SPI_CLOCK_DIV2);
     SPI.setBitOrder(MSBFIRST);
-    SPI.setClockDivider(SPI_CLOCK_DIV8);
+    SPI.setDataMode(SPI_MODE0);
 #endif
 
     initializeLCD();
